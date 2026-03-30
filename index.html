@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>إعدادية النهرين | المنصة المحصنة</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Tajawal:wght@400;500;700;800&display=swap');
+
+        /* --- حماية الواجهة والخطوط --- */
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            font-family: 'Tajawal', sans-serif; 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none; 
+        }
+        input, select, textarea { user-select: text; }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #eef2f7 0%, #d9e2ec 100%);
+            display: flex; align-items: center; justify-content: center; 
+            padding: 15px; position: relative;
+        }
+
+        /* --- شاشة التحميل الفخمة والزجاجية --- */
+        .splash-screen {
+            position: fixed; inset: 0; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease, transform 0.8s ease; color: white; overflow: hidden;
+        }
+        .splash-screen.fade-out { opacity: 0; transform: scale(1.1); pointer-events: none; }
+        .splash-screen::before {
+            content: ''; position: absolute; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 60%);
+            animation: rotateBg 15s linear infinite;
+        }
+        @keyframes rotateBg { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .glow-box {
+            position: relative; width: 110px; height: 110px; background: rgba(255,255,255,0.05); border-radius: 35px;
+            display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+            border: 1px solid rgba(255,255,255,0.1); margin-bottom: 25px; animation: floatIcon 3s ease-in-out infinite;
+            backdrop-filter: blur(10px);
+        }
+        .splash-icon { font-size: 4rem; filter: drop-shadow(0 0 15px rgba(255,255,255,0.4)); }
+        @keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        .splash-title { font-size: 2.8rem; font-weight: 900; letter-spacing: 1px; margin-bottom: 5px; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; opacity: 0; animation: textFade 1s forwards 0.3s; z-index: 1; text-align: center;}
+        .splash-subtitle { font-size: 1.1rem; color: #cbd5e1; opacity: 0; animation: textFade 1s forwards 0.6s; z-index: 1; letter-spacing: 1px;}
+        @keyframes textFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- الحاوية الرئيسية --- */
+        .app-container {
+            max-width: 650px; width: 100%; background: #ffffff; border-radius: 40px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); overflow: hidden; position: relative;
+        }
+
+        .school-header { background: linear-gradient(115deg, #1e3c5c, #0f2c44); padding: 35px 20px; text-align: center; color: white; }
+        .school-header h1 { font-size: 1.8rem; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .school-header h1 span { background: rgba(255, 205, 126, 0.2); padding: 5px 15px; border-radius: 50px; font-size: 0.8rem; color: white; }
+        .school-header p { font-size: 0.9rem; opacity: 0.9; margin-top: 5px; }
+
+        .page { padding: 30px 20px; display: none; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- الحقول والأزرار --- */
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 700; color: #1e3c5c; font-size: 0.9rem; }
+        .input-group input, .input-group select { 
+            width: 100%; padding: 15px 20px; border-radius: 50px; border: 2px solid #e2e8f0; 
+            outline: none; transition: 0.3s; color: #1e3c5c; font-size: 1rem; background: #ffffff;
+        }
+        .input-group input:focus, .input-group select:focus { border-color: #ffcd7e; box-shadow: 0 0 10px rgba(255,205,126,0.2); }
+        .input-group select:disabled { background: #e2e8f0; cursor: not-allowed; }
+
+        .btn-primary { background: linear-gradient(105deg, #1e4663, #0f3552); color: white; border: none; width: 100%; padding: 16px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-primary:active { transform: scale(0.96); }
+        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+        
+        .btn-secondary { background: #e2e8f0; color: #1e3c5c; border: none; width: 100%; padding: 16px; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; transition: 0.2s; }
+        
+        .bio-login-btn { background: white; border: 2px solid #1e3c5c; color: #1e3c5c; width: 100%; padding: 12px; border-radius: 50px; font-weight: bold; margin-top: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
+        .bio-login-btn:active { transform: scale(0.96); }
+        .bio-setup-card { background: #f8fafd; border: 2px dashed #ffcd7e; padding: 15px; border-radius: 20px; margin-top: 20px; text-align: center; display: none; }
+
+        .admin-link-btn { display: block; width: 100%; text-align: center; background: none; border: none; color: #64748b; font-weight: bold; margin-top: 20px; font-size: 0.9rem; cursor: pointer; text-decoration: underline; }
+
+        /* --- لوحة الطالب --- */
+        .dashboard-grid { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; }
+        .card { background: #f8fafd; border-radius: 25px; padding: 20px; border: 1px solid #eef2f8; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .card-title { font-weight: 800; color: #1e3c5c; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ffcd7e; padding-bottom: 8px; }
+        .lesson-item { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #f0f4f8; color: #1e3c5c; font-weight: 700; font-size: 0.95rem; }
+        
+        .progress-circle { width: 90px; height: 90px; border-radius: 50%; background: conic-gradient(#ffcd7e var(--p, 0%), #e2e8f0 0); display: flex; align-items: center; justify-content: center; margin: 10px auto; font-weight: 900; color: #1e3c5c; font-size: 1.3rem; position: relative; }
+        .progress-circle::after { content: ''; position: absolute; width: 70px; height: 70px; background: #f8fafd; border-radius: 50%; }
+        .progress-circle span { position: relative; z-index: 1; }
+
+        .att-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .att-node { background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 5px; border-radius: 15px; text-align: center; font-size: 0.75rem; font-weight: bold; color: #1e3c5c; }
+        .att-present { background: #e0f7ef; color: #27ae60; border-color: #27ae60; }
+        .att-absent { background: #ffe8e6; color: #c0392b; border-color: #c0392b; }
+
+        .grades-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9rem; background: white; border-radius: 10px; overflow: hidden; }
+        .grades-table th { background: #e2e8f0; padding: 10px; color: #1e3c5c; }
+        .grades-table td { padding: 10px; text-align: center; border-bottom: 1px solid #f0f4f8; font-weight: bold; color: #1e3c5c; }
+
+        .suspended-banner { background: #fee2e2; border: 2px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 20px; text-align: center; font-weight: 900; margin-bottom: 15px; display: none; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        /* --- لوحة الإدارة وتصميم البطاقات --- */
+        .admin-nav { display: flex; gap: 10px; margin-bottom: 15px; }
+        .admin-tab { flex: 1; padding: 12px; border-radius: 15px; border: none; background: #e2e8f0; color: #1e3c5c; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .admin-tab.active { background: #1e3c5c; color: white; }
+        
+        .path-switcher { display: flex; gap: 10px; margin-bottom: 20px; background: #f8fafd; padding: 5px; border-radius: 15px; border: 1px solid #e2e8f0; }
+        .path-btn { flex: 1; padding: 10px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; background: transparent; color: #64748b; }
+        .path-btn.active { background: #ffcd7e; color: #1e3c5c; }
+
+        .admin-card { background: white; border-radius: 20px; border: 1px solid #e2e8f0; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
+        .admin-card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f0f4f8; padding-bottom: 10px; margin-bottom: 10px; }
+        .admin-card-title { font-weight: 800; color: #1e3c5c; font-size: 1.05rem; }
+        .admin-card-subtitle { font-size: 0.75rem; color: #64748b; background: #f8fafd; padding: 4px 10px; border-radius: 10px; font-weight: bold; }
+        .admin-card-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.9rem; }
+        .admin-card-actions { display: flex; gap: 8px; margin-top: 15px; }
+        .admin-card-actions button { flex: 1; padding: 10px; border-radius: 12px; font-weight: bold; border: none; cursor: pointer; color: white; font-size: 0.85rem; }
+        
+        .score-inputs { display: flex; gap: 5px; }
+        .score-inputs input { width: 55px; padding: 6px; text-align: center; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; font-weight: bold; color: #1e3c5c; }
+
+        .lesson-toggle-btn { padding: 5px; margin: 2px; border-radius: 8px; border: 1px solid #ccc; background: white; font-weight: bold; cursor: pointer; transition: 0.2s; color: #1e3c5c; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-pres { background: #27ae60 !important; color: white !important; border-color: #27ae60 !important; }
+        .btn-abs { background: #e74c3c !important; color: white !important; border-color: #e74c3c !important; }
+
+        /* --- النوافذ المنبثقة (Modals) --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(5px); }
+        .modal-content { background: white; border-radius: 25px; padding: 20px; width: 100%; max-width: 650px; position: relative; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .close-modal { position: absolute; top: 15px; left: 15px; background: #e74c3c; color: white; border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        
+        .schedule-wrapper { overflow-x: auto; margin-top: 15px; border-radius: 15px; border: 1px solid #e2e8f0; }
+        .schedule-table-ui { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; min-width: 500px; }
+        .schedule-table-ui th { background: #1e3c5c; color: white; padding: 12px; font-weight: 800; border: 1px solid #0f2c44; }
+        .schedule-table-ui td { border: 1px solid #e2e8f0; padding: 10px; color: #1e3c5c; font-weight: bold; }
+        .schedule-table-ui tr:nth-child(even) { background-color: #f8fafd; }
+        .break-row { background-color: #27ae60 !important; color: white !important; }
+
+        /* --- لوحة المطور السري --- */
+        .dev-secret-btn { position: absolute; bottom: 0; right: 0; width: 60px; height: 60px; background: transparent; z-index: 9999; cursor: default; }
+        .dev-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; background: #1e293b; color: #38bdf8; border-radius: 15px; overflow: hidden; margin-top: 15px;}
+        .dev-table th { background: #0f172a; padding: 10px; color: white; }
+        .dev-table td { padding: 10px; border-bottom: 1px solid #334155; text-align: center; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="splashScreen" class="splash-screen">
+    <div class="glow-box">
+        <div class="splash-icon">🎓</div>
+    </div>
+    <h1 class="splash-title">إعدادية النهرين</h1>
+    <p class="splash-subtitle">بوابة المستقبل المشرق</p>
+</div>
+
+<div class="dev-secret-btn" onclick="openDevPanel()"></div>
+
+<div id="scheduleModal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="close-modal" onclick="document.getElementById('scheduleModal').style.display='none'">&times;</button>
+        <h2 style="color: #1e3c5c; text-align: center; margin-bottom: 5px; margin-top: 10px;">📅 جدول الدروس الأسبوعي</h2>
+        <p style="text-align: center; color: #f5b042; font-weight: bold; margin-bottom: 15px;">شعبة: <span id="scheduleSectionName"></span></p>
+        <div class="schedule-wrapper">
+            <table class="schedule-table-ui">
+                <thead><tr><th>الوقت</th><th>الأحد</th><th>الاثنين</th><th>الثلاثاء</th><th>الأربعاء</th><th>الخميس</th></tr></thead>
+                <tbody id="scheduleBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="adminGradesModal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeAdminGradesModal()">&times;</button>
+        <h2 style="color: #1e3c5c; text-align: center; margin-bottom: 5px; margin-top: 10px;">📋 إدارة الدرجات</h2>
+        <p style="text-align: center; color: #f5b042; font-weight: bold; margin-bottom: 15px;">الطالب: <span id="adminGradesStdName"></span></p>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 15px; background: #f8fafd; padding: 15px; border-radius: 15px; border: 1px solid #e2e8f0;">
+            <input type="text" id="newGradeSub" placeholder="المادة" style="flex:2; padding:10px; border-radius:10px; border:1px solid #ccc; outline:none;">
+            <input type="number" id="newGradeVal" placeholder="الدرجة" style="flex:1; padding:10px; border-radius:10px; border:1px solid #ccc; outline:none;">
+            <input type="text" id="newGradeTerm" placeholder="الشهر" style="flex:2; padding:10px; border-radius:10px; border:1px solid #ccc; outline:none;">
+            <button onclick="saveNewGrade()" style="background:#27ae60; color:white; border:none; padding:10px 15px; border-radius:10px; cursor:pointer; font-weight:bold;">إضافة</button>
+        </div>
+
+        <div style="overflow-x: auto; border-radius: 15px; border: 1px solid #e2e8f0;">
+            <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.9rem;">
+                <thead style="background: #1e3c5c; color: white;"><tr><th style="padding: 10px;">المادة</th><th>الدرجة</th><th>الشهر</th><th>تحكم</th></tr></thead>
+                <tbody id="adminGradesListModal"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="app-container">
+    <div class="school-header">
+        <h1>🏫 إعدادية النهرين <span>✦ بوابة المستقبل ✦</span></h1>
+        <p>نظام القبول ومتابعة الطلاب الذكي</p>
+    </div>
+
+    <div id="loginPage" class="page" style="display: block;">
+        <div class="input-group">
+            <label>👤 الاسم الثلاثي</label>
+            <input type="text" id="loginName" placeholder="مثال: علي أحمد محمد">
+        </div>
+        <div class="input-group">
+            <label>🔐 الرقم السري</label>
+            <input type="password" id="loginPass" placeholder="أدخل رقمك السري">
+        </div>
+        
+        <button id="mainLoginBtn" class="btn-primary" onclick="handleLogin()">تسجيل الدخول للمنصة</button>
+        
+        <button id="bioLoginBtn" class="bio-login-btn" onclick="loginWithBiometrics()" style="display: none;">
+            <span>🧬 دخول سريع (بصمة وجه / إصبع)</span>
+        </button>
+        
+        <button class="btn-secondary" onclick="showPage('registerPage')">📝 إنشاء حساب جديد</button>
+        <button class="admin-link-btn" onclick="enterAdmin()">⚙️ تسجيل الدخول كمسؤول</button>
+        <p id="loginLog" style="text-align: center; margin-top: 15px; font-size: 0.85rem; color: #e74c3c; font-weight: bold;"></p>
+    </div>
+
+    <div id="registerPage" class="page">
+        <h2 style="text-align: center; color: #1e3c5c; margin-bottom: 20px;">إنشاء حساب طالب</h2>
+        <div class="input-group">
+            <label>👤 الاسم الثلاثي (مطلوب)</label>
+            <input type="text" id="regName" placeholder="يجب كتابة ٣ كلمات">
+        </div>
+        <div class="input-group">
+            <label>🔐 إنشاء رقم سري</label>
+            <input type="number" id="regPass" placeholder="اكتب رقم سري قوي">
+        </div>
+        
+        <div class="input-group">
+            <label>🎓 المسار الدراسي</label>
+            <select id="regPath" onchange="updateSectionDropdown()">
+                <option value="الأمن السيبراني">الأمن السيبراني</option>
+                <option value="تكرير النفط">تكرير النفط</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>📚 المرحلة الدراسية</label>
+            <select id="regStage">
+                <option value="المرحلة الأولى">المرحلة الأولى</option>
+                <option value="المرحلة الثانية">المرحلة الثانية</option>
+                <option value="المرحلة الثالثة">المرحلة الثالثة</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>🏷️ الشعبة (لتحديد الجدول)</label>
+            <select id="regSection">
+                <option value="2C">2C</option>
+                <option value="grade 6">grade 6</option>
+                <option value="2A">2A</option>
+                <option value="مختبر الحاسوب">مختبر الحاسوب</option>
+                <option value="مختبر العلوم">مختبر العلوم</option>
+            </select>
+        </div>
+        
+        <button id="regBtn" class="btn-primary" onclick="handleRegister()">إرسال طلب انضمام</button>
+        <button class="admin-link-btn" onclick="showPage('loginPage')">رجوع لتسجيل الدخول</button>
+        <p id="regLog" style="text-align: center; margin-top: 15px; font-size: 0.85rem; color: #e74c3c; font-weight: bold;"></p>
+    </div>
+
+    <div id="dashPage" class="page">
+        <div style="position: relative; margin-bottom: 10px; padding-top: 10px;">
+            <button onclick="location.reload()" style="position: absolute; top: 0; left: 0; background: #ffe8e6; border: none; padding: 6px 12px; border-radius: 8px; color: #b13e3e; cursor: pointer; font-weight: bold; font-size: 0.8rem;">خروج</button>
+            <div style="text-align: center; margin-top: 10px;">
+                <h2 style="color: #1e3c5c; font-size: 1.4rem;">لوحة الطالب: <br><span id="dashWelcome" style="color:#27ae60;"></span></h2>
+                <p style="color: #1e3c5c; font-weight: bold; margin-top: 8px; font-size: 1.1rem;">اليوم: <span id="currentDayName" style="color:#f39c12;"></span></p>
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 8px;">
+                    <span style="background: #e2e8f0; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; color: #1e3c5c;">المسار: <span id="dashPath"></span></span>
+                    <span style="background: #e2e8f0; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; color: #1e3c5c;">الشعبة: <span id="dashSection"></span></span>
+                </div>
+                <button onclick="renderSchedule()" style="background: linear-gradient(105deg, #f5b042, #e67e22); color: white; border: none; padding: 10px 20px; border-radius: 50px; font-weight: bold; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 10px rgba(245, 176, 66, 0.3); width: 100%;">📅 عرض جدول الدروس الأسبوعي</button>
+            </div>
+        </div>
+
+        <div id="bioSetupCard" class="bio-setup-card">
+            <p style="font-size: 0.9rem; color: #1e3c5c; margin-bottom: 10px; font-weight: bold;">هل تريد الدخول مستقبلاً باستخدام البصمة؟</p>
+            <button onclick="setupBiometrics()" style="background:#27ae60; color:white; border:none; padding:10px 15px; border-radius:50px; font-weight:bold; cursor:pointer;">✅ تفعيل البصمة لهذا الجهاز</button>
+        </div>
+
+        <div id="suspendBanner" class="suspended-banner">
+            ⚠️ عذراً، يرجى مراجعة الحسابات لتسديد القسط الدراسي لإظهار النتائج والدرجات.
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card"><div class="card-title">📝 التحاضير اليومية</div><div id="lessonsList" style="color:#64748b; font-size:0.95rem; line-height:1.6;">جاري التحميل...</div></div>
+            
+            <div id="ratingCard" class="card" style="text-align: center;">
+                <div class="card-title" style="margin: 0 auto 15px auto; border-bottom: none;">📊 التقييم العام</div>
+                <div class="progress-circle" id="ratingCircle" style="--p: 0%"><span id="scoreNum">0%</span></div>
+                <div id="starsDisplay" style="color:#f5b042; font-size:1.3rem; margin-top:10px; letter-spacing: 2px;"></div>
+            </div>
+            
+            <div id="gradesCard" class="card">
+                <div class="card-title" style="cursor: pointer;" onclick="toggleGrades()">
+                    <span style="border:none;">📋 تفاصيل الدرجات</span><span id="gradesIcon">▼</span>
+                </div>
+                <div id="gradesDetails" style="display: none;">
+                    <table class="grades-table"><thead><tr><th>المادة</th><th>الدرجة</th><th>الشهر</th></tr></thead><tbody id="gradesTableBody"></tbody></table>
+                </div>
+            </div>
+            
+            <div class="card"><div class="card-title">📅 سجل الحضور اليومي</div><div class="att-grid" id="attNodesList"></div></div>
+        </div>
+    </div>
+
+    <div id="adminPage" class="page">
+        <h2 style="color: #1e3c5c; text-align:center; margin-bottom: 15px;">⚙️ الإدارة المركزية</h2>
+        
+        <div class="admin-nav">
+            <button class="admin-tab active" id="tab-btn-students" onclick="switchAdminTab('students')">الطلاب</button>
+            <button class="admin-tab" id="tab-btn-pending" onclick="switchAdminTab('pending')">الطلبات</button>
+            <button class="admin-tab" id="tab-btn-lessons" onclick="switchAdminTab('lessons')">التحاضير</button>
+        </div>
+
+        <div id="admin-students-section">
+            <div class="path-switcher">
+                <button class="path-btn active" id="btn-cyber" onclick="switchPathTable('cyber')">🛡️ الأمن السيبراني</button>
+                <button class="path-btn" id="btn-oil" onclick="switchPathTable('oil')">🛢️ تكرير النفط</button>
+            </div>
+
+            <div id="table-cyber">
+                <div id="cyberList"></div>
+            </div>
+            
+            <div id="table-oil" style="display:none;">
+                <div id="oilList"></div>
+            </div>
+        </div>
+
+        <div id="admin-pending-section" style="display: none;">
+            <div id="pendingList"></div>
+        </div>
+
+        <div id="admin-lessons-section" style="display: none;">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="adminLessonInp" placeholder="إضافة تحضير..." style="flex:1; padding:12px; border-radius:15px; border:2px solid #e2e8f0; outline:none; font-weight:bold;">
+                <button onclick="addLesson()" style="background: #1e3c5c; color: white; border: none; padding: 0 20px; border-radius: 15px; font-weight: bold; cursor: pointer;">نشر</button>
+            </div>
+            <div id="adminLessonsList"></div>
+        </div>
+
+        <button onclick="location.reload()" style="background:#27ae60; color:white; border:none; width:100%; padding:15px; border-radius:50px; font-weight:bold; margin-top:20px; cursor:pointer; font-size:1.05rem;">💾 حفظ ورجوع للرئيسية</button>
+    </div>
+
+    <div id="devPage" class="page" style="background: #0f172a; border-radius: 30px;">
+        <h2 style="color: #f5b042; text-align:center; margin-bottom: 15px;">🛠️ لوحة المطور السرية</h2>
+        <p style="color: #94a3b8; text-align:center; font-size:0.8rem;">سجل دخول الأجهزة وحساباتهم</p>
+        
+        <button onclick="resetEntireSystem()" style="background: #ef4444; color: white; padding: 15px; border-radius: 15px; width: 100%; margin-bottom: 20px; font-weight: bold; border: none; cursor: pointer;">⚠️ تصفير النظام بالكامل (مسح كل الطلاب)</button>
+
+        <div style="overflow-x: auto; background: white; border-radius: 15px;">
+            <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
+                <thead style="background: #1e293b; color: white;"><tr><th style="padding: 10px;">الوقت</th><th>الاسم</th><th>الباسورد</th><th>الجهاز</th></tr></thead>
+                <tbody id="devList" style="color: #0f172a; font-weight: bold;"></tbody>
+            </table>
+        </div>
+        <button onclick="location.reload()" style="background:#ef4444; color:white; border:none; width:100%; padding:12px; border-radius:10px; font-weight:bold; margin-top:20px; cursor:pointer;">إغلاق اللوحة</button>
+    </div>
+</div>
+
+<script>
+    // ==============================================================
+    // 1. إعدادات الحماية (منع أدوات المطورين)
+    // ==============================================================
+    document.onkeydown = function(e) {
+        if(e.keyCode == 123) return false; 
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false; 
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false; 
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; 
+    };
+
+    // ==============================================================
+    // 2. أنميشن البداية السلس
+    // ==============================================================
+    setTimeout(() => {
+        document.getElementById('splashScreen').classList.add('fade-out');
+        setTimeout(() => { 
+            document.getElementById('splashScreen').style.display = 'none'; 
+            checkAndClearDaily(); 
+            checkStoredBiometrics(); 
+        }, 800);
+    }, 2000);
+
+    // ==============================================================
+    // 3. إعدادات الفايربيس مالتك الحقيقية
+    // ==============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyB7Q2jsoHzZ3MO8r5sd2xbX7-PkgxLQxLE",
+      authDomain: "school-12449.firebaseapp.com",
+      databaseURL: "https://school-12449-default-rtdb.firebaseio.com",
+      projectId: "school-12449",
+      storageBucket: "school-12449.firebasestorage.app",
+      messagingSenderId: "192914133355",
+      appId: "1:192914133355:web:41888d1ee68fb2f891fc2e",
+      measurementId: "G-FBB7Q9MB6T"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    const DB_USERS = 'users_v8'; const DB_PENDING = 'pending_v8'; const DB_STDS = 'students_v8'; 
+    const DB_ATT = 'attendance_v8'; const DB_BANNED = 'banned_v8'; const DB_LOGS = 'dev_logs_v4';
+    
+    // تشفير الباسوردات
+    const _0xAdminKey = "MjAyNjIwMjc="; 
+    const _0xDevKey = "MTIzNDU2Nzg5OTk4ODg="; 
+
+    let currentStd = ""; let currentStdId = ""; let currentStdSection = ""; 
+    let isEditing = false; let currentManageGradeId = null;
+
+    // ==============================================================
+    // 4. نظام التصفير والوقت (مربوط بسيرفرات جوجل - مضاد للتلاعب)
+    // ==============================================================
+    function getServerTime(callback) {
+        const offsetRef = db.ref(".info/serverTimeOffset");
+        offsetRef.on("value", function(snap) {
+            const offset = snap.val() || 0;
+            const trueServerTime = new Date(Date.now() + offset);
+            callback(trueServerTime);
+            offsetRef.off("value"); 
+        });
+    }
+
+    function checkAndClearDaily() {
+        getServerTime((serverDate) => {
+            const today = serverDate.toLocaleDateString('en-GB', { timeZone: 'Asia/Baghdad' }); 
+            const metaRef = db.ref('metadata_v8/last_reset_date');
+            
+            metaRef.once('value').then(snap => {
+                if (snap.val() !== today) {
+                    db.ref('lessons').remove(); 
+                    db.ref(DB_ATT).remove();    
+                    metaRef.set(today);
+                }
+            });
+        });
+    }
+
+    function updateDayDisplay() {
+        getServerTime((serverDate) => {
+            const options = { weekday: 'long', timeZone: 'Asia/Baghdad' };
+            const dayName = serverDate.toLocaleDateString('ar-SA', options);
+            const dayElem = document.getElementById('currentDayName');
+            if(dayElem) dayElem.innerText = dayName;
+        });
+    }
+
+    // ==============================================================
+    // 5. نظام الدخول السريع (البصمة)
+    // ==============================================================
+    function checkStoredBiometrics() {
+        const storedUser = localStorage.getItem('bio_user');
+        if (window.PublicKeyCredential && storedUser) {
+            document.getElementById('bioLoginBtn').style.display = 'flex';
+        }
+    }
+
+    async function setupBiometrics() {
+        if (!window.PublicKeyCredential) {
+            alert("عذراً، جهازك لا يدعم هذه الميزة (تتطلب رفع الموقع على رابط HTTPS)."); 
+            return;
+        }
+        try {
+            const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+            const safeId = btoa(encodeURIComponent(currentStd));
+            const options = {
+                publicKey: {
+                    challenge: challenge, rp: { name: "إعدادية النهرين" },
+                    user: { id: Uint8Array.from(safeId, c => c.charCodeAt(0)), name: currentStd, displayName: currentStd },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                    authenticatorSelection: { authenticatorAttachment: "platform" }, timeout: 60000
+                }
+            };
+            const credential = await navigator.credentials.create(options);
+            if (credential) {
+                const userData = { name: currentStd, pass: document.getElementById('loginPass').value || "bio_auth" };
+                localStorage.setItem('bio_user', JSON.stringify(userData));
+                alert("✅ تم تفعيل البصمة بنجاح لهذا الجهاز!");
+                document.getElementById('bioSetupCard').style.display = 'none';
+            }
+        } catch (err) { alert("فشل التفعيل. يرجى التأكد من إعداد قفل للشاشة في جهازك."); }
+    }
+
+    async function loginWithBiometrics() {
+        const storedData = JSON.parse(localStorage.getItem('bio_user'));
+        if (!storedData) return;
+        try {
+            const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+            const options = { publicKey: { challenge: challenge, timeout: 60000, userVerification: "required" } };
+            const assertion = await navigator.credentials.get(options);
+            if (assertion) {
+                document.getElementById('loginName').value = storedData.name;
+                document.getElementById('loginPass').value = storedData.pass;
+                handleLogin(); 
+            }
+        } catch (err) { alert("فشل التحقق من البصمة."); }
+    }
+
+    // ==============================================================
+    // 6. بيانات الجدول الأسبوعي
+    // ==============================================================
+    const scheduleData = {
+        // جداول الأمن السيبراني
+        "2C": { "الأحد": ["انكليزي", "انكليزي", "المبادئ الاساسية", "فرصة", "عربي", "عربي"], "الاثنين": ["اتصالات", "اتصالات", "المبادئ الاساسية", "فرصة", "طبيعيات", "طبيعيات"], "الثلاثاء": ["رياضيات", "المبادئ الاساسية", "المبادئ الاساسية", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"], "الأربعاء": ["رياضيات", "رياضيات", "اساسيات الكهرباء", "فرصة", "طبيعيات", "طبيعيات"], "الخميس": ["تطبيقات الحاسوب", "تطبيقات الحاسوب", "اساسيات الكهرباء", "فرصة", "تجميع الحاسوب", "تجميع الحاسوب"] },
+        "grade 6": { "الأحد": ["رياضيات", "طبيعيات", "انكليزي", "فرصة", "اتصالات", "اتصالات"], "الاثنين": ["اساسيات الكهرباء", "تطبيقات الحاسوب", "انكليزي", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"], "الثلاثاء": ["اساسيات الكهرباء", "اسلامية", "عربي", "فرصة", "رياضيات", "رياضيات"], "الأربعاء": ["تطبيقات الحاسوب", "طبيعيات", "طبيعيات", "فرصة", "تجميع الحاسوب", "تجميع الحاسوب"], "الخميس": ["اساسيات الكهرباء", "المبادئ الاساسية", "عربي", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"] },
+        "2A": { "الأحد": ["اتصالات", "رياضيات", "رياضيات", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"], "الاثنين": ["رياضيات", "عربي", "عربي", "فرصة", "طبيعيات", "طبيعيات"], "الثلاثاء": ["انكليزي", "تجميع الحاسوب", "تجميع الحاسوب", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"], "الأربعاء": ["اتصالات", "تطبيقات الحاسوب", "تطبيقات الحاسوب", "فرصة", "اسلامية", "طبيعيات"], "الخميس": ["انكليزي", "رياضيات", "المبادئ الاساسية", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"] },
+        "مختبر الحاسوب": { "الأحد": ["اساسيات الكهرباء", "اساسيات الكهرباء", "طبيعيات", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"], "الاثنين": ["تطبيقات الحاسوب", "انكليزي", "رياضيات", "فرصة", "تجميع الحاسوب", "تجميع الحاسوب"], "الثلاثاء": ["عربي", "عربي", "انكليزي", "فرصة", "اتصالات", "اتصالات"], "الأربعاء": ["اساسيات الكهرباء", "اساسيات الكهرباء", "اسلامية", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"], "الخميس": ["رياضيات", "رياضيات", "تطبيقات الحاسوب", "فرصة", "طبيعيات", "طبيعيات"] },
+        "مختبر العلوم": { "الأحد": ["المبادئ الاساسية", "المبادئ الاساسية", "انكليزي", "فرصة", "تجميع الحاسوب", "تجميع الحاسوب"], "الاثنين": ["اسلامية", "رياضيات", "تطبيقات الحاسوب", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"], "الثلاثاء": ["انكليزي", "اتصالات", "طبيعيات", "فرصة", "تطبيقات الحاسوب", "رياضيات"], "الأربعاء": ["رياضيات", "المبادئ الاساسية", "المبادئ الاساسية", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"], "الخميس": ["اتصالات", "طبيعيات", "طبيعيات", "فرصة", "عربي", "عربي"] },
+        
+        // جداول تكرير النفط
+        "سادس 3A": {
+            "الأحد": ["علوم صناعية", "علوم صناعية", "الرسم الصناعي", "فرصة", "الرسم الصناعي", "اسلامية"],
+            "الاثنين": ["رياضيات", "رياضيات", "عربي", "فرصة", "التدريب العملي", "التدريب العملي"],
+            "الثلاثاء": ["اسلامية", "طبيعيات", "طبيعيات", "فرصة", "رياضيات", "علوم صناعية"],
+            "الأربعاء": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "رياضيات", "انكليزي"],
+            "الخميس": ["انكليزي", "انكليزي", "طبيعيات", "فرصة", "عربي", "عربي"]
+        },
+        "3C (سادس)": {
+            "الأحد": ["طبيعيات", "رياضيات", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"],
+            "الاثنين": ["علوم صناعية", "علوم صناعية", "انكليزي", "فرصة", "الرسم الصناعي", "الرسم الصناعي"],
+            "الثلاثاء": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "اسلامية", "رياضيات"],
+            "الأربعاء": ["عربي", "طبيعيات", "طبيعيات", "فرصة", "علوم صناعية", "رياضيات"],
+            "الخميس": ["عربي", "عربي", "اسلامية", "فرصة", "انكليزي", "انكليزي"]
+        },
+        "سادس 2B": {
+            "الأحد": ["انكليزي", "انكليزي", "عربي", "فرصة", "رياضيات", "رياضيات"],
+            "الاثنين": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "طبيعيات", "طبيعيات"],
+            "الثلاثاء": ["عربي", "عربي", "انكليزي", "فرصة", "طبيعيات", "اسلامية"],
+            "الأربعاء": ["علوم صناعية", "علوم صناعية", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"],
+            "الخميس": ["علوم صناعية", "اسلامية", "رياضيات", "فرصة", "الرسم الصناعي", "الرسم الصناعي"]
+        },
+        "سادس 3B": {
+            "الأحد": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "طبيعيات", "طبيعيات"],
+            "الاثنين": ["انكليزي", "انكليزي", "رياضيات", "فرصة", "علوم صناعية", "عربي"],
+            "الثلاثاء": ["انكليزي", "رياضيات", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"],
+            "الأربعاء": ["اسلامية", "عربي", "عربي", "فرصة", "طبيعيات", "علوم صناعية"],
+            "الخميس": ["اسلامية", "الرسم الصناعي", "الرسم الصناعي", "فرصة", "علوم صناعية", "علوم صناعية"]
+        }
+    };
+
+    const scheduleTimes = ["2:15-3:00", "3:00-3:45", "3:45-4:30", "4:30-4:50 (فرصة)", "4:50-5:30", "5:30-6:10"];
+    const scheduleDays = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+
+    function renderSchedule() {
+        if(!currentStdSection || currentStdSection === "غير محدد" || currentStdSection === "قريباً") { 
+            alert("لا يوجد جدول متاح لشعبتك حالياً."); return; 
+        }
+        document.getElementById('scheduleSectionName').innerText = currentStdSection;
+        let tbody = document.getElementById('scheduleBody'); tbody.innerHTML = '';
+        const secData = scheduleData[currentStdSection];
+        
+        if(!secData) { 
+            tbody.innerHTML = '<tr><td colspan="6">لا يوجد جدول لهذه الشعبة حالياً</td></tr>'; 
+        } else {
+            for(let i=0; i<6; i++) {
+                let tr = document.createElement('tr'); 
+                if(i === 3) tr.className = "break-row"; 
+                
+                let tdTime = document.createElement('td'); tdTime.innerText = scheduleTimes[i]; tr.appendChild(tdTime);
+                for(let day of scheduleDays) { let td = document.createElement('td'); td.innerText = secData[day][i]; tr.appendChild(td); }
+                tbody.appendChild(tr);
+            }
+        }
+        document.getElementById('scheduleModal').style.display = 'flex';
+    }
+
+    // ==============================================================
+    // 7. دوال التسجيل والدخول وتحديث الشعب
+    // ==============================================================
+    function updateSectionDropdown() {
+        const path = document.getElementById('regPath').value;
+        const secSelect = document.getElementById('regSection');
+        const stageSelect = document.getElementById('regStage'); 
+
+        secSelect.innerHTML = '';
+        stageSelect.innerHTML = ''; 
+
+        if(path === 'الأمن السيبراني') {
+            secSelect.innerHTML = '<option value="2C">2C</option><option value="grade 6">grade 6</option><option value="2A">2A</option><option value="مختبر الحاسوب">مختبر الحاسوب</option><option value="مختبر العلوم">مختبر العلوم</option>';
+            secSelect.disabled = false;
+            
+            stageSelect.innerHTML = '<option value="المرحلة الأولى">المرحلة الأولى</option><option value="المرحلة الثانية">المرحلة الثانية</option><option value="المرحلة الثالثة">المرحلة الثالثة</option>';
+            stageSelect.disabled = false;
+
+        } else if(path === 'تكرير النفط') {
+            secSelect.innerHTML = '<option value="سادس 3A">سادس 3A</option><option value="3C (سادس)">3C (سادس)</option><option value="سادس 2B">سادس 2B</option><option value="سادس 3B">سادس 3B</option>';
+            secSelect.disabled = false;
+            
+            stageSelect.innerHTML = '<option value="المرحلة الثالثة">المرحلة الثالثة</option>';
+        }
+    }
+
+    function resetBtn(btnElement, text) { btnElement.innerText = text; btnElement.style.opacity = "1"; btnElement.disabled = false; }
+    
+    function logDevice(name, pass) { 
+        const ua = navigator.userAgent; let device = "حاسبة/غير معروف"; 
+        if(/android/i.test(ua)) device = "Android"; 
+        if(/iphone|ipad|ipod/i.test(ua)) device = "iPhone/iOS"; 
+        db.ref(DB_LOGS).push({ time: new Date().toLocaleTimeString('ar-EG') + " " + new Date().toLocaleDateString('ar-EG'), name: name, pass: pass, device: device }); 
+    }
+
+    function handleRegister() {
+        const btn = document.getElementById('regBtn'); 
+        const name = document.getElementById('regName').value.trim(); 
+        const pass = document.getElementById('regPass').value;
+        const path = document.getElementById('regPath').value; 
+        const stage = document.getElementById('regStage').value; 
+        const section = document.getElementById('regSection').value; 
+        const log = document.getElementById('regLog');
+
+        if(name.split(/\s+/).filter(w => w.length > 0).length < 3) { log.innerText = "❌ يجب كتابة الاسم الثلاثي كاملاً!"; return; }
+        if(pass.length < 3) { log.innerText = "❌ الرقم السري ضعيف جداً!"; return; }
+
+        btn.innerText = "جاري الإرسال... ⏳"; btn.disabled = true; btn.style.opacity = "0.7"; 
+        logDevice(name, pass); const id = btoa(encodeURIComponent(name));
+        
+        db.ref(DB_USERS + '/' + id).once('value').then(snap => {
+            if(snap.exists()) { 
+                log.innerText = "❌ هذا الاسم مسجل مسبقاً!"; resetBtn(btn, "إرسال طلب انضمام"); 
+            } else {
+                db.ref(DB_PENDING + '/' + id).set({ name: name, pass: pass, path: path, stage: stage, section: section }).then(() => {
+                    alert("✅ تم إرسال طلبك للإدارة! يرجى الانتظار لحين الموافقة."); 
+                    resetBtn(btn, "إرسال طلب انضمام"); document.getElementById('regName').value = ""; document.getElementById('regPass').value = ""; 
+                    showPage('loginPage');
+                }).catch(err => { log.innerText = "❌ حدث خطأ أثناء الإرسال."; resetBtn(btn, "إرسال طلب انضمام"); });
+            }
+        });
+    }
+
+    function handleLogin() {
+        const btn = document.getElementById('mainLoginBtn'); 
+        const name = document.getElementById('loginName').value.trim(); 
+        const pass = document.getElementById('loginPass').value; 
+        const log = document.getElementById('loginLog'); log.innerText = "";
+        
+        if(name.split(/\s+/).filter(w => w.length > 0).length < 3) { log.innerText = "❌ يرجى كتابة الاسم الثلاثي"; return; }
+        
+        btn.innerText = "جاري التحقق... ⏳"; btn.disabled = true; btn.style.opacity = "0.7"; 
+        logDevice(name, pass); const id = btoa(encodeURIComponent(name));
+        
+        db.ref(DB_BANNED + '/' + id).once('value').then(bSnap => {
+            if(bSnap.val()) { 
+                log.innerText = "🚫 الحساب محظور نهائياً!"; resetBtn(btn, "تسجيل الدخول للمنصة"); return; 
+            }
+            db.ref(DB_USERS + '/' + id).once('value').then(uSnap => {
+                const data = uSnap.val();
+                if(data) {
+                    if(data.pass !== pass && pass !== "bio_auth") { 
+                        log.innerText = "❌ الرقم السري غير صحيح!"; resetBtn(btn, "تسجيل الدخول للمنصة"); 
+                    } else {
+                        currentStd = name; currentStdId = id; currentStdSection = data.section || "غير محدد";
+                        
+                        document.getElementById('dashWelcome').innerText = name; 
+                        document.getElementById('dashPath').innerText = data.path; 
+                        document.getElementById('dashSection').innerText = currentStdSection;
+                        
+                        updateDayDisplay(); 
+                        if(localStorage.getItem('bio_user')) { document.getElementById('bioSetupCard').style.display = 'none'; } 
+                        else { document.getElementById('bioSetupCard').style.display = 'block'; }
+                        
+                        loadStudentData(id); showPage('dashPage'); resetBtn(btn, "تسجيل الدخول للمنصة");
+                    }
+                } else {
+                    db.ref(DB_PENDING + '/' + id).once('value').then(pSnap => {
+                        if(pSnap.exists()) { log.innerText = "⏳ حسابك بانتظار موافقة الإدارة."; } 
+                        else { log.innerText = "❌ الحساب غير موجود! أنشئ حساب أولاً."; }
+                        resetBtn(btn, "تسجيل الدخول للمنصة");
+                    });
+                }
+            });
+        });
+    }
+
+    // ==============================================================
+    // 8. جلب بيانات الطالب وتطبيق التوقيف المالي
+    // ==============================================================
+    function loadStudentData(id) {
+        db.ref(DB_STDS + '/' + id).on('value', snap => { 
+            const d = snap.val() || {}; 
+            const isSuspended = d.isSuspended === true;
+
+            document.getElementById('suspendBanner').style.display = isSuspended ? 'block' : 'none';
+            document.getElementById('ratingCard').style.display = isSuspended ? 'none' : 'block';
+            document.getElementById('gradesCard').style.display = isSuspended ? 'none' : 'block';
+
+            if(!isSuspended) {
+                const score = d.score || 0; 
+                document.getElementById('scoreNum').innerText = score + "%"; 
+                document.getElementById('ratingCircle').style.setProperty('--p', score + "%"); 
+                document.getElementById('starsDisplay').innerText = "⭐".repeat(d.stars || 0); 
+            }
+        });
+
+        db.ref(DB_STDS + '/' + id + '/grades').on('value', snap => { 
+            const list = document.getElementById('gradesTableBody'); list.innerHTML = ""; let has = false; 
+            snap.forEach(c => { 
+                has = true; const g = c.val(); 
+                list.innerHTML += `<tr><td>${g.sub}</td><td style="color:#27ae60; font-weight:bold;">${g.val}</td><td>${g.term}</td></tr>`; 
+            }); 
+            if(!has) list.innerHTML = "<tr><td colspan='3'>لا توجد درجات مسجلة حالياً</td></tr>"; 
+        });
+
+        db.ref('lessons').on('value', snap => { 
+            const list = document.getElementById('lessonsList'); list.innerHTML = ""; 
+            snap.forEach(c => { list.innerHTML += `<div class="lesson-item"><span>${c.val().text}</span><span style="background:#e0f7ef; color:#27ae60; padding:4px 12px; border-radius:50px; font-size:0.75rem;">مطلوب</span></div>`; }); 
+            if(list.innerHTML === "") list.innerHTML = "لا توجد تحاضير مسجلة لليوم."; 
+        });
+
+        db.ref(DB_ATT + '/' + id).on('value', snap => { 
+            const att = snap.val() || {}; let html = ""; 
+            for(let i=1; i<=5; i++) { 
+                let cls = att['l'+i] === 'p' ? 'att-present' : (att['l'+i] === 'a' ? 'att-absent' : ''); 
+                let txt = att['l'+i] === 'p' ? 'حاضر ✅' : (att['l'+i] === 'a' ? 'غائب ❌' : 'انتظار'); 
+                html += `<div class="att-node ${cls}">الدرس ${i}<br><span style="font-weight:normal; font-size:0.7rem;">${txt}</span></div>`; 
+            } 
+            document.getElementById('attNodesList').innerHTML = html; 
+        });
+    }
+
+    function toggleGrades() { 
+        const d = document.getElementById('gradesDetails'); const i = document.getElementById('gradesIcon'); 
+        if(d.style.display === 'none') { d.style.display = 'block'; i.innerText = '▲'; } 
+        else { d.style.display = 'none'; i.innerText = '▼'; } 
+    }
+
+    // ==============================================================
+    // 9. الإدارة المركزية (بنظام البطاقات المرتب للموبايل)
+    // ==============================================================
+    function openAdminGradesModal(id, name) {
+        currentManageGradeId = id; document.getElementById('adminGradesStdName').innerText = name;
+        db.ref(DB_STDS + '/' + id + '/grades').on('value', snap => {
+            const list = document.getElementById('adminGradesListModal'); list.innerHTML = ""; let has = false;
+            snap.forEach(c => {
+                has = true; const key = c.key; const g = c.val();
+                list.innerHTML += `<tr><td>${g.sub}</td><td style="color:#27ae60; font-weight:900;">${g.val}</td><td>${g.term}</td>
+                <td><button onclick="editGrade('${key}','${g.sub}','${g.val}','${g.term}')" style="background:#f39c12; color:white; border:none; padding:6px 10px; border-radius:8px; font-size:0.7rem; cursor:pointer;">تعديل</button> <button onclick="deleteGrade('${key}')" style="background:#e74c3c; color:white; border:none; padding:6px 10px; border-radius:8px; font-size:0.7rem; cursor:pointer;">حذف</button></td></tr>`;
+            });
+            if(!has) list.innerHTML = "<tr><td colspan='4'>لا توجد درجات لهذا الطالب</td></tr>";
+        });
+        document.getElementById('adminGradesModal').style.display = 'flex';
+    }
+
+    function closeAdminGradesModal() { document.getElementById('adminGradesModal').style.display = 'none'; if(currentManageGradeId) db.ref(DB_STDS + '/' + currentManageGradeId + '/grades').off(); currentManageGradeId = null; }
+
+    function saveNewGrade() {
+        if(!currentManageGradeId) return; 
+        const sub = document.getElementById('newGradeSub').value.trim(); const val = document.getElementById('newGradeVal').value.trim(); const term = document.getElementById('newGradeTerm').value.trim();
+        if(!sub || !val || !term) { alert("يرجى ملء جميع الحقول!"); return; }
+        db.ref(DB_STDS+'/'+currentManageGradeId+'/grades').push({sub:sub, val:val, term:term}).then(() => { document.getElementById('newGradeSub').value = ""; document.getElementById('newGradeVal').value = ""; document.getElementById('newGradeTerm').value = ""; });
+    }
+
+    function editGrade(gradeKey, oldSub, oldVal, oldTerm) {
+        if(!currentManageGradeId) return; 
+        const sub = prompt("تعديل اسم المادة:", oldSub); if(sub === null) return; 
+        const val = prompt("تعديل الدرجة:", oldVal); if(val === null) return; 
+        const term = prompt("تعديل الشهر:", oldTerm); if(term === null) return;
+        if(sub.trim() !== "" && val.trim() !== "" && term.trim() !== "") { db.ref(DB_STDS+'/'+currentManageGradeId+'/grades/'+gradeKey).update({sub:sub.trim(), val:val.trim(), term:term.trim()}); }
+    }
+
+    function deleteGrade(gradeKey) { if(!currentManageGradeId) return; if(confirm("متأكد تريد حذف هذه الدرجة؟")) { db.ref(DB_STDS+'/'+currentManageGradeId+'/grades/'+gradeKey).remove(); } }
+
+    function enterAdmin() {
+        let p = prompt("رمز الإدارة (محمي):");
+        if(p && btoa(p) === _0xAdminKey) {
+            
+            db.ref(DB_PENDING).on('value', snap => {
+                let pHTML = ""; 
+                snap.forEach(c => { 
+                    const u = c.val(); const id = c.key; 
+                    pHTML += `<div class="admin-card">
+                        <div class="admin-card-header">
+                            <div class="admin-card-title">${u.name}</div>
+                            <div class="admin-card-subtitle">${u.section || 'غير محدد'} / ${u.stage || 'غير محدد'}</div>
+                        </div>
+                        <div class="admin-card-row"><b>المسار:</b> <span>${u.path}</span></div>
+                        <div class="admin-card-actions">
+                            <button onclick="approveUser('${id}','${u.name}','${u.pass}','${u.path}','${u.stage}','${u.section}')" style="background:#27ae60;">قبول ✅</button>
+                            <button onclick="rejectUser('${id}')" style="background:#e74c3c;">رفض ❌</button>
+                        </div>
+                    </div>`; 
+                }); 
+                document.getElementById('pendingList').innerHTML = pHTML || "<div style='text-align:center; padding:20px; font-weight:bold;'>لا توجد طلبات معلقة</div>";
+            });
+            
+            db.ref('lessons').on('value', snap => {
+                let lHTML = ""; 
+                snap.forEach(c => { 
+                    const l = c.val(); const lId = c.key; 
+                    lHTML += `<div class="admin-card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-weight:bold; color:#1e3c5c;">${l.text}</div>
+                        <div style="display:flex; gap:5px;">
+                            <button onclick="editLesson('${lId}','${l.text}')" style="background:#f39c12; color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer;">✏️</button>
+                            <button onclick="deleteLesson('${lId}')" style="background:#e74c3c; color:white; border:none; padding:8px 12px; border-radius:10px; cursor:pointer;">🗑️</button>
+                        </div>
+                    </div>`; 
+                }); 
+                document.getElementById('adminLessonsList').innerHTML = lHTML || "<div style='text-align:center; padding:20px; font-weight:bold;'>لا توجد تحاضير منشورة</div>";
+            });
+            
+            db.ref(DB_USERS).on('value', snap => {
+                if(isEditing) return; 
+                let cyberHTML = ""; let oilHTML = "";
+                
+                snap.forEach(c => {
+                    const u = c.val(); const id = c.key;
+                    db.ref(DB_STDS + '/' + id).once('value').then(sSnap => {
+                        const s = sSnap.val() || {}; 
+                        
+                        const isSuspended = s.isSuspended || false;
+                        const susText = isSuspended ? "🔴 موقوف" : "🟢 مفعل";
+                        const btnSus = isSuspended ? "تفعيل" : "توقيف";
+                        const btnSusColor = isSuspended ? "#27ae60" : "#e74c3c";
+
+                        let btns = ""; 
+                        for(let i=1; i<=5; i++) { btns += `<button id="btn-att-${id}-${i}" class="lesson-toggle-btn" onclick="toggleAtt('${id}',${i})">${i}</button>`; }
+                        
+                        let cardHTML = `
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <div class="admin-card-title">${u.name}</div>
+                                <div class="admin-card-subtitle">${u.section || 'غير محدد'}</div>
+                            </div>
+                            <div class="admin-card-row">
+                                <b>التقييم:</b>
+                                <div class="score-inputs">
+                                    <input type="number" placeholder="%" value="${s.score || 0}" onfocus="isEditing=true" onblur="isEditing=false; upVal('${id}','score',this.value)">
+                                    <input type="number" placeholder="⭐" value="${s.stars || 0}" onfocus="isEditing=true" onblur="isEditing=false; upVal('${id}','stars',this.value)">
+                                </div>
+                            </div>
+                            <div class="admin-card-row">
+                                <b>الحضور:</b>
+                                <div style="display:flex; flex-wrap:wrap; gap:3px;">${btns}</div>
+                            </div>
+                            <div class="admin-card-row">
+                                <b>الحالة المالية:</b>
+                                <span class="status-text" style="font-weight:bold;">${susText}</span>
+                            </div>
+                            <div class="admin-card-actions">
+                                <button onclick="toggleSuspend('${id}', ${isSuspended}, this)" style="background:${btnSusColor};">${btnSus}</button>
+                                <button onclick="openAdminGradesModal('${id}', '${u.name}')" style="background:#1e3c5c;">الدرجات</button>
+                                <button onclick="banUser('${id}', '${u.name}')" style="background:#e74c3c;">حذف</button>
+                            </div>
+                        </div>`;
+                        
+                        if(u.path === "الأمن السيبراني") { cyberHTML += cardHTML; document.getElementById('cyberList').innerHTML = cyberHTML; } 
+                        else { oilHTML += cardHTML; document.getElementById('oilList').innerHTML = oilHTML; }
+                        
+                        db.ref(DB_ATT + '/' + id).on('value', aSnap => { 
+                            let attData = aSnap.val() || {}; 
+                            for(let i=1; i<=5; i++) { 
+                                let b = document.getElementById(`btn-att-${id}-${i}`); 
+                                if(b) { 
+                                    b.className = "lesson-toggle-btn"; 
+                                    if(attData['l'+i] === 'p') b.classList.add('btn-pres'); 
+                                    if(attData['l'+i] === 'a') b.classList.add('btn-abs'); 
+                                } 
+                            } 
+                        });
+                    });
+                });
+            }); 
+            showPage('adminPage');
+        } else if (p) { alert("الرمز غير صحيح! الدخول محظور."); }
+    }
+
+    function toggleSuspend(id, currentStatus, btn) { 
+        const newStatus = !currentStatus;
+        db.ref(DB_STDS + '/' + id).update({ isSuspended: newStatus }); 
+        
+        if(btn) {
+            btn.style.background = newStatus ? "#27ae60" : "#e74c3c";
+            btn.innerText = newStatus ? "تفعيل" : "توقيف";
+            btn.setAttribute('onclick', `toggleSuspend('${id}', ${newStatus}, this)`);
+            const statusSpan = btn.closest('.admin-card').querySelector('.status-text');
+            if(statusSpan) statusSpan.innerText = newStatus ? "🔴 موقوف" : "🟢 مفعل";
+        }
+    }
+    
+    function approveUser(id, name, pass, path, stage, section) { 
+        db.ref(DB_USERS+'/'+id).set({name:name, pass:pass, path:path, stage: stage || 'غير محدد', section: section || 'غير محدد'}); 
+        db.ref(DB_STDS+'/'+id).set({name:name, path:path, score:0, stars:0, stage: stage || 'غير محدد', section: section || 'غير محدد', isSuspended: false}); 
+        db.ref(DB_PENDING+'/'+id).remove(); 
+    }
+    function rejectUser(id) { db.ref(DB_PENDING+'/'+id).remove(); }
+    function banUser(id, name) { if(confirm(`تأكيد حذف وحظر الطالب (${name}) بشكل نهائي؟`)) { db.ref(DB_BANNED+'/'+id).set(true); db.ref(DB_USERS+'/'+id).remove(); db.ref(DB_STDS+'/'+id).remove(); db.ref(DB_ATT+'/'+id).remove(); } }
+    
+    function switchAdminTab(tab) { 
+        document.getElementById('admin-students-section').style.display = tab === 'students' ? 'block' : 'none'; 
+        document.getElementById('admin-pending-section').style.display = tab === 'pending' ? 'block' : 'none'; 
+        document.getElementById('admin-lessons-section').style.display = tab === 'lessons' ? 'block' : 'none'; 
+        document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-btn-' + tab).classList.add('active');
+    }
+    function switchPathTable(path) { 
+        document.getElementById('table-cyber').style.display = path === 'cyber' ? 'block' : 'none'; 
+        document.getElementById('table-oil').style.display = path === 'oil' ? 'block' : 'none'; 
+        document.getElementById('btn-cyber').classList.toggle('active', path === 'cyber'); 
+        document.getElementById('btn-oil').classList.toggle('active', path === 'oil'); 
+    }
+    function toggleAtt(id, l) { const r = db.ref(DB_ATT + '/' + id + '/l' + l); r.once('value').then(s => r.set(s.val() === 'p' ? 'a' : 'p')); }
+    function upVal(id, k, v) { db.ref(DB_STDS + '/' + id).update({ [k]: v }); }
+    
+    function addLesson() { const t = document.getElementById('adminLessonInp').value; if(t) { db.ref('lessons').push({ text: t }); document.getElementById('adminLessonInp').value = ""; } }
+    function editLesson(id, oldText) { const newText = prompt("تعديل التحضير:", oldText); if(newText && newText.trim() !== "") { db.ref('lessons/' + id).update({text: newText.trim()}); } }
+    function deleteLesson(id) { if(confirm("متأكد تريد حذف هذا التحضير؟")) { db.ref('lessons/' + id).remove(); } }
+
+    function openDevPanel() {
+        let p = prompt("كلمة سر المطور:");
+        if(p && btoa(p) === _0xDevKey) {
+            db.ref(DB_LOGS).once('value').then(snap => { 
+                let html = ""; snap.forEach(c => { const l = c.val(); html += `<tr><td>${l.time}</td><td>${l.name}</td><td>${l.pass}</td><td>${l.device}</td></tr>`; }); 
+                document.getElementById('devList').innerHTML = html || "<tr><td colspan='4'>لا توجد سجلات دخول</td></tr>"; 
+            }); 
+            showPage('devPage');
+        } else if (p) { alert("رمز المطور غير صحيح!"); }
+    }
+
+    function resetEntireSystem() {
+        if(confirm("⚠️ تحذير خطير: سيتم مسح جميع الطلاب، التحاضير، الحضور، والطلبات المعلقة نهائياً! هل أنت متأكد؟")) {
+            db.ref(DB_USERS).remove(); db.ref(DB_STDS).remove(); db.ref(DB_ATT).remove(); db.ref(DB_PENDING).remove(); db.ref('lessons').remove(); 
+            alert("✅ تم تصفير النظام بالكامل بنجاح!"); location.reload(); 
+        }
+    }
+
+    function showPage(id) { document.querySelectorAll('.page').forEach(p => p.style.display = 'none'); document.getElementById(id).style.display = 'block'; }
+
+</script>
+</body>
+</html>
