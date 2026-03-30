@@ -460,7 +460,7 @@
     }
 
     // ==============================================================
-    // 5. نظام الدخول السريع (البصمة)
+    // 5. نظام الدخول السريع (البصمة) - المعدل
     // ==============================================================
     function checkStoredBiometrics() {
         const storedUser = localStorage.getItem('bio_user');
@@ -482,7 +482,8 @@
                     challenge: challenge, rp: { name: "إعدادية النهرين" },
                     user: { id: Uint8Array.from(safeId, c => c.charCodeAt(0)), name: currentStd, displayName: currentStd },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                    authenticatorSelection: { authenticatorAttachment: "platform" }, timeout: 60000
+                    authenticatorSelection: { userVerification: "preferred" }, 
+                    timeout: 60000
                 }
             };
             const credential = await navigator.credentials.create(options);
@@ -492,7 +493,9 @@
                 alert("✅ تم تفعيل البصمة بنجاح لهذا الجهاز!");
                 document.getElementById('bioSetupCard').style.display = 'none';
             }
-        } catch (err) { alert("فشل التفعيل. يرجى التأكد من إعداد قفل للشاشة في جهازك."); }
+        } catch (err) { 
+            alert("فشل التفعيل. السبب: " + err.message); 
+        }
     }
 
     async function loginWithBiometrics() {
