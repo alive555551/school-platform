@@ -460,7 +460,7 @@
     }
 
     // ==============================================================
-    // 5. نظام الدخول السريع (البصمة) - التعديل النهائي لمشكلة 64 بايت
+    // 5. نظام الدخول السريع (البصمة) - التعديل النهائي لفرض حفظ البصمة
     // ==============================================================
     function checkStoredBiometrics() {
         const storedUser = localStorage.getItem('bio_user');
@@ -485,7 +485,8 @@
                     challenge: challenge, rp: { name: "إعدادية النهرين" },
                     user: { id: userId, name: currentStd, displayName: currentStd },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                    authenticatorSelection: { userVerification: "preferred" }, 
+                    // الإضافة هنا: تجبر المتصفح يحفظ البصمة بمدير كلمات المرور (Passkeys)
+                    authenticatorSelection: { residentKey: "required", userVerification: "required" }, 
                     timeout: 60000
                 }
             };
@@ -493,7 +494,7 @@
             if (credential) {
                 const userData = { name: currentStd, pass: document.getElementById('loginPass').value || "bio_auth" };
                 localStorage.setItem('bio_user', JSON.stringify(userData));
-                alert("✅ تم تفعيل البصمة بنجاح لهذا الجهاز!");
+                alert("✅ تم تفعيل البصمة وحفظها بجهازك بنجاح!");
                 document.getElementById('bioSetupCard').style.display = 'none';
             }
         } catch (err) { 
@@ -506,14 +507,22 @@
         if (!storedData) return;
         try {
             const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
-            const options = { publicKey: { challenge: challenge, timeout: 60000, userVerification: "required" } };
+            const options = { 
+                publicKey: { 
+                    challenge: challenge, 
+                    timeout: 60000, 
+                    userVerification: "required" 
+                } 
+            };
             const assertion = await navigator.credentials.get(options);
             if (assertion) {
                 document.getElementById('loginName').value = storedData.name;
                 document.getElementById('loginPass').value = storedData.pass;
                 handleLogin(); 
             }
-        } catch (err) { alert("فشل التحقق من البصمة."); }
+        } catch (err) { 
+            alert("فشل التحقق من البصمة. " + err.message); 
+        }
     }
 
     // ==============================================================
