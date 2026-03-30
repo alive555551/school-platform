@@ -460,7 +460,7 @@
     }
 
     // ==============================================================
-    // 5. نظام الدخول السريع (البصمة) - المعدل
+    // 5. نظام الدخول السريع (البصمة) - التعديل النهائي لمشكلة 64 بايت
     // ==============================================================
     function checkStoredBiometrics() {
         const storedUser = localStorage.getItem('bio_user');
@@ -476,11 +476,14 @@
         }
         try {
             const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
-            const safeId = btoa(encodeURIComponent(currentStd));
+            
+            // الحل هنا: توليد ID عشوائي طوله 32 بايت حتى ما نتجاوز الـ 64 بايت
+            const userId = new Uint8Array(32); window.crypto.getRandomValues(userId); 
+            
             const options = {
                 publicKey: {
                     challenge: challenge, rp: { name: "إعدادية النهرين" },
-                    user: { id: Uint8Array.from(safeId, c => c.charCodeAt(0)), name: currentStd, displayName: currentStd },
+                    user: { id: userId, name: currentStd, displayName: currentStd },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
                     authenticatorSelection: { userVerification: "preferred" }, 
                     timeout: 60000
