@@ -481,19 +481,30 @@
         btn.disabled = true;
 
         try {
-            const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
-            const safeId = btoa(encodeURIComponent(currentStd));
+            const challenge = new Uint8Array(32); 
+            window.crypto.getRandomValues(challenge);
+            
+            // الحل هنا: توليد ID عشوائي (16 بايت) خفيف ومقبول للمتصفح بدل تشفير الاسم الطويل
+            const userId = new Uint8Array(16);
+            window.crypto.getRandomValues(userId);
+
             const options = {
                 publicKey: {
                     challenge: challenge, 
                     rp: { name: "إعدادية النهرين", id: window.location.hostname },
-                    user: { id: Uint8Array.from(safeId, c => c.charCodeAt(0)), name: currentStd, displayName: currentStd },
+                    user: { 
+                        id: userId, // استخدمنا الـ ID العشوائي الآمن هنا
+                        name: currentStd, 
+                        displayName: currentStd 
+                    },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
                     authenticatorSelection: { authenticatorAttachment: "platform" }, 
                     timeout: 60000
                 }
             };
+            
             const credential = await navigator.credentials.create(options);
+            
             if (credential) {
                 const userData = { name: currentStd, pass: document.getElementById('loginPass').value || "bio_auth" };
                 localStorage.setItem('bio_user', JSON.stringify(userData));
@@ -507,7 +518,7 @@
             }
         } catch (err) { 
             console.error(err);
-            alert("❌ فشل التفعيل. تأكد من وجود قفل شاشة أو بصمة بجهازك، أو أنك لم تقم بإلغاء العملية."); 
+            alert("❌ فشل التفعيل: " + err.message + "\n\nتأكد من وجود قفل شاشة بجهازك."); 
             btn.innerText = originalText;
         } finally {
             btn.disabled = false;
