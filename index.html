@@ -86,7 +86,6 @@
         
         .bio-login-btn { background: white; border: 2px solid #1e3c5c; color: #1e3c5c; width: 100%; padding: 12px; border-radius: 50px; font-weight: bold; margin-top: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
         .bio-login-btn:active { transform: scale(0.96); }
-        .bio-setup-card { background: #f8fafd; border: 2px dashed #ffcd7e; padding: 15px; border-radius: 20px; margin-top: 20px; text-align: center; display: none; }
 
         .admin-link-btn { display: block; width: 100%; text-align: center; background: none; border: none; color: #64748b; font-weight: bold; margin-top: 20px; font-size: 0.9rem; cursor: pointer; text-decoration: underline; }
 
@@ -286,16 +285,18 @@
             </div>
         </div>
 
-        <div id="bioSetupCard" class="bio-setup-card">
-            <p style="font-size: 0.9rem; color: #1e3c5c; margin-bottom: 10px; font-weight: bold;">هل تريد الدخول مستقبلاً باستخدام البصمة؟</p>
-            <button onclick="setupBiometrics()" style="background:#27ae60; color:white; border:none; padding:10px 15px; border-radius:50px; font-weight:bold; cursor:pointer;">✅ تفعيل البصمة لهذا الجهاز</button>
-        </div>
-
         <div id="suspendBanner" class="suspended-banner">
             ⚠️ عذراً، يرجى مراجعة الحسابات لتسديد القسط الدراسي لإظهار النتائج والدرجات.
         </div>
 
         <div class="dashboard-grid">
+            
+            <div id="bioManageCard" class="card" style="display: none; text-align: center; border: 2px dashed #27ae60;">
+                <div class="card-title" style="justify-content: center; border-bottom: none; margin-bottom: 5px;">🧬 الدخول السريع (البصمة)</div>
+                <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 10px;">ادخل للمنصة بدون باسوورد مستقبلاً</p>
+                <button id="setupBioBtnDash" onclick="setupBiometrics()" style="background:#27ae60; color:white; border:none; padding:10px 20px; border-radius:50px; font-weight:bold; cursor:pointer; width: 100%; transition: 0.3s;">✅ تفعيل البصمة لهذا الجهاز</button>
+            </div>
+
             <div class="card"><div class="card-title">📝 التحاضير اليومية</div><div id="lessonsList" style="color:#64748b; font-size:0.95rem; line-height:1.6;">جاري التحميل...</div></div>
             
             <div id="ratingCard" class="card" style="text-align: center;">
@@ -415,7 +416,6 @@
     const DB_USERS = 'users_v8'; const DB_PENDING = 'pending_v8'; const DB_STDS = 'students_v8'; 
     const DB_ATT = 'attendance_v8'; const DB_BANNED = 'banned_v8'; const DB_LOGS = 'dev_logs_v4';
     
-    // تشفير الباسوردات
     const _0xAdminKey = "MjAyNjIwMjc="; 
     const _0xDevKey = "MTIzNDU2Nzg5OTk4ODg="; 
 
@@ -423,7 +423,7 @@
     let isEditing = false; let currentManageGradeId = null;
 
     // ==============================================================
-    // 4. نظام التصفير والوقت (مربوط بسيرفرات جوجل - مضاد للتلاعب)
+    // 4. نظام التصفير والوقت 
     // ==============================================================
     function getServerTime(callback) {
         const offsetRef = db.ref(".info/serverTimeOffset");
@@ -460,7 +460,7 @@
     }
 
     // ==============================================================
-    // 5. نظام الدخول السريع (البصمة)
+    // 5. نظام الدخول السريع (البصمة) المحسن
     // ==============================================================
     function checkStoredBiometrics() {
         const storedUser = localStorage.getItem('bio_user');
@@ -471,24 +471,23 @@
 
     async function setupBiometrics() {
         if (!window.PublicKeyCredential) {
-            alert("عذراً، جهازك لا يدعم هذه الميزة (تأكد من فتح الموقع برابط HTTPS)."); 
+            alert("عذراً، المتصفح لا يدعم البصمة. تأكد من فتح الموقع برابط آمن (HTTPS)."); 
             return;
         }
+        
+        const btn = document.getElementById('setupBioBtnDash');
+        const originalText = btn.innerText;
+        btn.innerText = "جاري تفعيل البصمة... ⏳";
+        btn.disabled = true;
+
         try {
             const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
             const safeId = btoa(encodeURIComponent(currentStd));
             const options = {
                 publicKey: {
                     challenge: challenge, 
-                    rp: { 
-                        name: "إعدادية النهرين",
-                        id: window.location.hostname 
-                    },
-                    user: { 
-                        id: Uint8Array.from(safeId, c => c.charCodeAt(0)), 
-                        name: currentStd, 
-                        displayName: currentStd 
-                    },
+                    rp: { name: "إعدادية النهرين", id: window.location.hostname },
+                    user: { id: Uint8Array.from(safeId, c => c.charCodeAt(0)), name: currentStd, displayName: currentStd },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
                     authenticatorSelection: { authenticatorAttachment: "platform" }, 
                     timeout: 60000
@@ -498,13 +497,20 @@
             if (credential) {
                 const userData = { name: currentStd, pass: document.getElementById('loginPass').value || "bio_auth" };
                 localStorage.setItem('bio_user', JSON.stringify(userData));
-                alert("✅ تم تفعيل البصمة بنجاح لهذا الجهاز!");
-                document.getElementById('bioSetupCard').style.display = 'none';
+                
+                alert("✅ تم تفعيل البصمة بنجاح! تكدر هسه تدخل بصمتك مباشرة بالمرات الجاية.");
+                
+                btn.innerText = "✅ البصمة مفعلة (انقر لتحديثها)";
+                btn.style.background = "#1e3c5c";
+                document.getElementById('bioManageCard').style.border = "2px solid #1e3c5c";
                 document.getElementById('bioLoginBtn').style.display = 'flex'; 
             }
         } catch (err) { 
             console.error(err);
-            alert("فشل التفعيل. يرجى التأكد من إعداد قفل للشاشة في جهازك والموافقة على الصلاحيات."); 
+            alert("❌ فشل التفعيل. تأكد من وجود قفل شاشة أو بصمة بجهازك، أو أنك لم تقم بإلغاء العملية."); 
+            btn.innerText = originalText;
+        } finally {
+            btn.disabled = false;
         }
     }
 
@@ -537,42 +543,15 @@
     // 6. بيانات الجدول الأسبوعي
     // ==============================================================
     const scheduleData = {
-        // جداول الأمن السيبراني
         "2C": { "الأحد": ["انكليزي", "انكليزي", "المبادئ الاساسية", "فرصة", "عربي", "عربي"], "الاثنين": ["اتصالات", "اتصالات", "المبادئ الاساسية", "فرصة", "طبيعيات", "طبيعيات"], "الثلاثاء": ["رياضيات", "المبادئ الاساسية", "المبادئ الاساسية", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"], "الأربعاء": ["رياضيات", "رياضيات", "اساسيات الكهرباء", "فرصة", "طبيعيات", "طبيعيات"], "الخميس": ["تطبيقات الحاسوب", "تطبيقات الحاسوب", "اساسيات الكهرباء", "فرصة", "تجميع الحاسوب", "تجميع الحاسوب"] },
         "grade 6": { "الأحد": ["رياضيات", "طبيعيات", "انكليزي", "فرصة", "اتصالات", "اتصالات"], "الاثنين": ["اساسيات الكهرباء", "تطبيقات الحاسوب", "انكليزي", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"], "الثلاثاء": ["اساسيات الكهرباء", "اسلامية", "عربي", "فرصة", "رياضيات", "رياضيات"], "الأربعاء": ["تطبيقات الحاسوب", "طبيعيات", "طبيعيات", "فرصة", "تجميع الحاسوب", "تجميع الحاسوب"], "الخميس": ["اساسيات الكهرباء", "المبادئ الاساسية", "عربي", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"] },
         "2A": { "الأحد": ["اتصالات", "رياضيات", "رياضيات", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"], "الاثنين": ["رياضيات", "عربي", "عربي", "فرصة", "طبيعيات", "طبيعيات"], "الثلاثاء": ["انكليزي", "تجميع الحاسوب", "تجميع الحاسوب", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"], "الأربعاء": ["اتصالات", "تطبيقات الحاسوب", "تطبيقات الحاسوب", "فرصة", "اسلامية", "طبيعيات"], "الخميس": ["انكليزي", "رياضيات", "المبادئ الاساسية", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"] },
         "مختبر الحاسوب": { "الأحد": ["اساسيات الكهرباء", "اساسيات الكهرباء", "طبيعيات", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"], "الاثنين": ["تطبيقات الحاسوب", "انكليزي", "رياضيات", "فرصة", "تجميع الحاسوب", "تجميع الحاسوب"], "الثلاثاء": ["عربي", "عربي", "انكليزي", "فرصة", "اتصالات", "اتصالات"], "الأربعاء": ["اساسيات الكهرباء", "اساسيات الكهرباء", "اسلامية", "فرصة", "المبادئ الاساسية", "المبادئ الاساسية"], "الخميس": ["رياضيات", "رياضيات", "تطبيقات الحاسوب", "فرصة", "طبيعيات", "طبيعيات"] },
         "مختبر العلوم": { "الأحد": ["المبادئ الاساسية", "المبادئ الاساسية", "انكليزي", "فرصة", "تجميع الحاسوب", "تجميع الحاسوب"], "الاثنين": ["اسلامية", "رياضيات", "تطبيقات الحاسوب", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"], "الثلاثاء": ["انكليزي", "اتصالات", "طبيعيات", "فرصة", "تطبيقات الحاسوب", "رياضيات"], "الأربعاء": ["رياضيات", "المبادئ الاساسية", "المبادئ الاساسية", "فرصة", "اساسيات الكهرباء", "اساسيات الكهرباء"], "الخميس": ["اتصالات", "طبيعيات", "طبيعيات", "فرصة", "عربي", "عربي"] },
-        
-        // جداول تكرير النفط
-        "سادس 3A": {
-            "الأحد": ["علوم صناعية", "علوم صناعية", "الرسم الصناعي", "فرصة", "الرسم الصناعي", "اسلامية"],
-            "الاثنين": ["رياضيات", "رياضيات", "عربي", "فرصة", "التدريب العملي", "التدريب العملي"],
-            "الثلاثاء": ["اسلامية", "طبيعيات", "طبيعيات", "فرصة", "رياضيات", "علوم صناعية"],
-            "الأربعاء": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "رياضيات", "انكليزي"],
-            "الخميس": ["انكليزي", "انكليزي", "طبيعيات", "فرصة", "عربي", "عربي"]
-        },
-        "3C (سادس)": {
-            "الأحد": ["طبيعيات", "رياضيات", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"],
-            "الاثنين": ["علوم صناعية", "علوم صناعية", "انكليزي", "فرصة", "الرسم الصناعي", "الرسم الصناعي"],
-            "الثلاثاء": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "اسلامية", "رياضيات"],
-            "الأربعاء": ["عربي", "طبيعيات", "طبيعيات", "فرصة", "علوم صناعية", "رياضيات"],
-            "الخميس": ["عربي", "عربي", "اسلامية", "فرصة", "انكليزي", "انكليزي"]
-        },
-        "سادس 2B": {
-            "الأحد": ["انكليزي", "انكليزي", "عربي", "فرصة", "رياضيات", "رياضيات"],
-            "الاثنين": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "طبيعيات", "طبيعيات"],
-            "الثلاثاء": ["عربي", "عربي", "انكليزي", "فرصة", "طبيعيات", "اسلامية"],
-            "الأربعاء": ["علوم صناعية", "علوم صناعية", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"],
-            "الخميس": ["علوم صناعية", "اسلامية", "رياضيات", "فرصة", "الرسم الصناعي", "الرسم الصناعي"]
-        },
-        "سادس 3B": {
-            "الأحد": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "طبيعيات", "طبيعيات"],
-            "الاثنين": ["انكليزي", "انكليزي", "رياضيات", "فرصة", "علوم صناعية", "عربي"],
-            "الثلاثاء": ["انكليزي", "رياضيات", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"],
-            "الأربعاء": ["اسلامية", "عربي", "عربي", "فرصة", "طبيعيات", "علوم صناعية"],
-            "الخميس": ["اسلامية", "الرسم الصناعي", "الرسم الصناعي", "فرصة", "علوم صناعية", "علوم صناعية"]
-        }
+        "سادس 3A": { "الأحد": ["علوم صناعية", "علوم صناعية", "الرسم الصناعي", "فرصة", "الرسم الصناعي", "اسلامية"], "الاثنين": ["رياضيات", "رياضيات", "عربي", "فرصة", "التدريب العملي", "التدريب العملي"], "الثلاثاء": ["اسلامية", "طبيعيات", "طبيعيات", "فرصة", "رياضيات", "علوم صناعية"], "الأربعاء": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "رياضيات", "انكليزي"], "الخميس": ["انكليزي", "انكليزي", "طبيعيات", "فرصة", "عربي", "عربي"] },
+        "3C (سادس)": { "الأحد": ["طبيعيات", "رياضيات", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"], "الاثنين": ["علوم صناعية", "علوم صناعية", "انكليزي", "فرصة", "الرسم الصناعي", "الرسم الصناعي"], "الثلاثاء": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "اسلامية", "رياضيات"], "الأربعاء": ["عربي", "طبيعيات", "طبيعيات", "فرصة", "علوم صناعية", "رياضيات"], "الخميس": ["عربي", "عربي", "اسلامية", "فرصة", "انكليزي", "انكليزي"] },
+        "سادس 2B": { "الأحد": ["انكليزي", "انكليزي", "عربي", "فرصة", "رياضيات", "رياضيات"], "الاثنين": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "طبيعيات", "طبيعيات"], "الثلاثاء": ["عربي", "عربي", "انكليزي", "فرصة", "طبيعيات", "اسلامية"], "الأربعاء": ["علوم صناعية", "علوم صناعية", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"], "الخميس": ["علوم صناعية", "اسلامية", "رياضيات", "فرصة", "الرسم الصناعي", "الرسم الصناعي"] },
+        "سادس 3B": { "الأحد": ["التدريب العملي", "التدريب العملي", "التدريب العملي", "فرصة", "طبيعيات", "طبيعيات"], "الاثنين": ["انكليزي", "انكليزي", "رياضيات", "فرصة", "علوم صناعية", "عربي"], "الثلاثاء": ["انكليزي", "رياضيات", "رياضيات", "فرصة", "التدريب العملي", "التدريب العملي"], "الأربعاء": ["اسلامية", "عربي", "عربي", "فرصة", "طبيعيات", "علوم صناعية"], "الخميس": ["اسلامية", "الرسم الصناعي", "الرسم الصناعي", "فرصة", "علوم صناعية", "علوم صناعية"] }
     };
 
     const scheduleTimes = ["2:15-3:00", "3:00-3:45", "3:45-4:30", "4:30-4:50 (فرصة)", "4:50-5:30", "5:30-6:10"];
@@ -602,28 +581,21 @@
     }
 
     // ==============================================================
-    // 7. دوال التسجيل والدخول وتحديث الشعب
+    // 7. دوال التسجيل والدخول 
     // ==============================================================
     function updateSectionDropdown() {
         const path = document.getElementById('regPath').value;
         const secSelect = document.getElementById('regSection');
         const stageSelect = document.getElementById('regStage'); 
 
-        secSelect.innerHTML = '';
-        stageSelect.innerHTML = ''; 
+        secSelect.innerHTML = ''; stageSelect.innerHTML = ''; 
 
         if(path === 'الأمن السيبراني') {
             secSelect.innerHTML = '<option value="2C">2C</option><option value="grade 6">grade 6</option><option value="2A">2A</option><option value="مختبر الحاسوب">مختبر الحاسوب</option><option value="مختبر العلوم">مختبر العلوم</option>';
-            secSelect.disabled = false;
-            
-            stageSelect.innerHTML = '<option value="المرحلة الأولى">المرحلة الأولى</option><option value="المرحلة الثانية">المرحلة الثانية</option><option value="المرحلة الثالثة">المرحلة الثالثة</option>';
-            stageSelect.disabled = false;
-
+            secSelect.disabled = false; stageSelect.innerHTML = '<option value="المرحلة الأولى">المرحلة الأولى</option><option value="المرحلة الثانية">المرحلة الثانية</option><option value="المرحلة الثالثة">المرحلة الثالثة</option>'; stageSelect.disabled = false;
         } else if(path === 'تكرير النفط') {
             secSelect.innerHTML = '<option value="سادس 3A">سادس 3A</option><option value="3C (سادس)">3C (سادس)</option><option value="سادس 2B">سادس 2B</option><option value="سادس 3B">سادس 3B</option>';
-            secSelect.disabled = false;
-            
-            stageSelect.innerHTML = '<option value="المرحلة الثالثة">المرحلة الثالثة</option>';
+            secSelect.disabled = false; stageSelect.innerHTML = '<option value="المرحلة الثالثة">المرحلة الثالثة</option>';
         }
     }
 
@@ -692,8 +664,16 @@
                         document.getElementById('dashSection').innerText = currentStdSection;
                         
                         updateDayDisplay(); 
-                        if(localStorage.getItem('bio_user')) { document.getElementById('bioSetupCard').style.display = 'none'; } 
-                        else { document.getElementById('bioSetupCard').style.display = 'block'; }
+
+                        if(window.PublicKeyCredential) { 
+                            document.getElementById('bioManageCard').style.display = 'block'; 
+                            if(localStorage.getItem('bio_user')) { 
+                                const bBtn = document.getElementById('setupBioBtnDash');
+                                bBtn.innerText = "✅ البصمة مفعلة (انقر لتحديثها)"; 
+                                bBtn.style.background = "#1e3c5c"; 
+                                document.getElementById('bioManageCard').style.border = "2px solid #1e3c5c";
+                            } 
+                        }
                         
                         loadStudentData(id); showPage('dashPage'); resetBtn(btn, "تسجيل الدخول للمنصة");
                     }
@@ -761,7 +741,7 @@
     }
 
     // ==============================================================
-    // 9. الإدارة المركزية (بنظام البطاقات المرتب للموبايل)
+    // 9. الإدارة المركزية
     // ==============================================================
     function openAdminGradesModal(id, name) {
         currentManageGradeId = id; document.getElementById('adminGradesStdName').innerText = name;
