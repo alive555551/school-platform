@@ -484,7 +484,7 @@
             const challenge = new Uint8Array(32); 
             window.crypto.getRandomValues(challenge);
             
-            // الحل هنا: توليد ID عشوائي (16 بايت) خفيف ومقبول للمتصفح بدل تشفير الاسم الطويل
+            // توليد ID عشوائي آمن
             const userId = new Uint8Array(16);
             window.crypto.getRandomValues(userId);
 
@@ -493,12 +493,16 @@
                     challenge: challenge, 
                     rp: { name: "إعدادية النهرين", id: window.location.hostname },
                     user: { 
-                        id: userId, // استخدمنا الـ ID العشوائي الآمن هنا
+                        id: userId,
                         name: currentStd, 
                         displayName: currentStd 
                     },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                    authenticatorSelection: { authenticatorAttachment: "platform" }, 
+                    authenticatorSelection: { 
+                        authenticatorAttachment: "platform",
+                        residentKey: "required", // السطر المسؤول عن حفظ البصمة كـ Passkey
+                        userVerification: "required"
+                    }, 
                     timeout: 60000
                 }
             };
@@ -509,7 +513,7 @@
                 const userData = { name: currentStd, pass: document.getElementById('loginPass').value || "bio_auth" };
                 localStorage.setItem('bio_user', JSON.stringify(userData));
                 
-                alert("✅ تم تفعيل البصمة بنجاح! تكدر هسه تدخل بصمتك مباشرة بالمرات الجاية.");
+                alert("✅ تم تفعيل البصمة بنجاح! انحفظت كـ Passkey دائم بجهازك.");
                 
                 btn.innerText = "✅ البصمة مفعلة (انقر لتحديثها)";
                 btn.style.background = "#1e3c5c";
@@ -518,7 +522,7 @@
             }
         } catch (err) { 
             console.error(err);
-            alert("❌ فشل التفعيل: " + err.message + "\n\nتأكد من وجود قفل شاشة بجهازك."); 
+            alert("❌ فشل التفعيل: " + err.message); 
             btn.innerText = originalText;
         } finally {
             btn.disabled = false;
@@ -955,3 +959,4 @@
 </script>
 </body>
 </html>
+
