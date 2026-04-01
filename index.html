@@ -460,7 +460,7 @@
     }
 
     // ==============================================================
-    // 5. نظام الدخول السريع (البصمة) - التعديل النهائي لفرض حفظ البصمة
+    // 5. نظام الدخول السريع (البصمة)
     // ==============================================================
     function checkStoredBiometrics() {
         const storedUser = localStorage.getItem('bio_user');
@@ -471,22 +471,26 @@
 
     async function setupBiometrics() {
         if (!window.PublicKeyCredential) {
-            alert("عذراً، جهازك لا يدعم هذه الميزة (تتطلب رفع الموقع على رابط HTTPS)."); 
+            alert("عذراً، جهازك لا يدعم هذه الميزة (تأكد من فتح الموقع برابط HTTPS)."); 
             return;
         }
         try {
             const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
-            
-            // الحل هنا: توليد ID عشوائي طوله 32 بايت حتى ما نتجاوز الـ 64 بايت
-            const userId = new Uint8Array(32); window.crypto.getRandomValues(userId); 
-            
+            const safeId = btoa(encodeURIComponent(currentStd));
             const options = {
                 publicKey: {
-                    challenge: challenge, rp: { name: "إعدادية النهرين" },
-                    user: { id: userId, name: currentStd, displayName: currentStd },
+                    challenge: challenge, 
+                    rp: { 
+                        name: "إعدادية النهرين",
+                        id: window.location.hostname 
+                    },
+                    user: { 
+                        id: Uint8Array.from(safeId, c => c.charCodeAt(0)), 
+                        name: currentStd, 
+                        displayName: currentStd 
+                    },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                    // الإضافة هنا: تجبر المتصفح يحفظ البصمة بمدير كلمات المرور (Passkeys)
-                    authenticatorSelection: { residentKey: "required", userVerification: "required" }, 
+                    authenticatorSelection: { authenticatorAttachment: "platform" }, 
                     timeout: 60000
                 }
             };
@@ -494,11 +498,13 @@
             if (credential) {
                 const userData = { name: currentStd, pass: document.getElementById('loginPass').value || "bio_auth" };
                 localStorage.setItem('bio_user', JSON.stringify(userData));
-                alert("✅ تم تفعيل البصمة وحفظها بجهازك بنجاح!");
+                alert("✅ تم تفعيل البصمة بنجاح لهذا الجهاز!");
                 document.getElementById('bioSetupCard').style.display = 'none';
+                document.getElementById('bioLoginBtn').style.display = 'flex'; 
             }
         } catch (err) { 
-            alert("فشل التفعيل. السبب: " + err.message); 
+            console.error(err);
+            alert("فشل التفعيل. يرجى التأكد من إعداد قفل للشاشة في جهازك والموافقة على الصلاحيات."); 
         }
     }
 
@@ -511,7 +517,8 @@
                 publicKey: { 
                     challenge: challenge, 
                     timeout: 60000, 
-                    userVerification: "required" 
+                    userVerification: "required",
+                    rpId: window.location.hostname 
                 } 
             };
             const assertion = await navigator.credentials.get(options);
@@ -521,7 +528,8 @@
                 handleLogin(); 
             }
         } catch (err) { 
-            alert("فشل التحقق من البصمة. " + err.message); 
+            console.error(err);
+            alert("فشل التحقق من البصمة. حاول التسجيل بالرقم السري."); 
         }
     }
 
