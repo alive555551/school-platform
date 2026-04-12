@@ -1399,19 +1399,7 @@ document.addEventListener('dblclick',function(e){
 .toggle-label.active-elec{color:#fff!important;background:linear-gradient(135deg,#f59e0b,#d97706)!important;box-shadow:0 4px 12px rgba(245,158,11,.3)!important}
 .switch{display:none!important}
 .fly-helper{position:fixed;z-index:99998;bottom:140px;right:15px;pointer-events:none;transition:all 1s cubic-bezier(.34,1.56,.64,1)}
-.fly-helper.fly-hide{opacity:0;transform:scale(.2) translateY(50px);pointer-events:none}
-.fly-bubble{position:absolute;bottom:115%;left:50%;transform:translateX(-50%);background:#fff;color:#1e3c5c;padding:10px 14px;border-radius:16px;font-size:.75rem;font-weight:700;box-shadow:0 8px 25px rgba(0,0,0,.15);pointer-events:auto;max-width:240px;text-align:center;white-space:normal;line-height:1.4}
-.fly-bubble::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top-color:#fff}
-.fly-creature{width:55px;height:55px;position:relative;animation:flyFloat 2.5s ease-in-out infinite;pointer-events:auto;cursor:pointer}
-@keyframes flyFloat{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-10px) rotate(-3deg)}50%{transform:translateY(-5px) rotate(0)}75%{transform:translateY(-12px) rotate(3deg)}}
-.fly-body-main{width:42px;height:42px;background:linear-gradient(135deg,#818cf8,#6366f1);border-radius:50% 50% 50% 50%/55% 55% 45% 45%;position:absolute;bottom:0;left:6px;box-shadow:0 6px 20px rgba(99,102,241,.35)}
-.fly-eye-w{width:7px;height:7px;background:#fff;border-radius:50%;position:absolute;top:14px}
-.fly-eye-l{left:11px}.fly-eye-r{left:24px}
-.fly-pupil-w{width:3.5px;height:3.5px;background:#1e1b4b;border-radius:50%;margin:1.5px auto 0}
-.fly-wing-w{width:13px;height:20px;background:rgba(255,255,255,.22);border-radius:50%;position:absolute;top:5px;animation:flyWing .4s ease-in-out infinite alternate}
-.fly-wing-l{right:-5px}.fly-wing-r{left:-5px}
-@keyframes flyWing{0%{transform:rotate(-15deg) scaleY(.65)}100%{transform:rotate(15deg) scaleY(1)}}
-.fly-mouth{width:10px;height:5px;border-bottom:2.5px solid rgba(255,255,255,.5);border-radius:0 0 50% 50%;position:absolute;bottom:10px;left:16px}
+
 .skcard{background:#fff;border:2px solid #e2e8f0;border-radius:18px;padding:11px 6px;text-align:center;cursor:pointer;transition:.25s;box-shadow:0 3px 10px rgba(0,0,0,.03)}
 .skcard:active{transform:scale(.93)}
 .skcard.skon{border-color:#10b981;background:rgba(16,185,129,.04)}
@@ -1443,15 +1431,8 @@ document.addEventListener('dblclick',function(e){
 <script>
 var _SKINS=[{id:"default",n:"الأصلي",c:0,bg:"#9B111E",m:"rgba(0,0,0,.3)"},{id:"ocean",n:"محيط",c:30,bg:"#3b82f6",m:"#1e3a8a"},{id:"sunset",n:"غروب",c:30,bg:"#f97316",m:"#7c2d12"},{id:"grape",n:"عنبي",c:40,bg:"#8b5cf6",m:"#3b0764"},{id:"rose",n:"وردي",c:40,bg:"#ec4899",m:"#831843"},{id:"mint",n:"نعناع",c:50,bg:"#2dd4bf",m:"#134e4a"},{id:"gold",n:"ذهبي",c:80,bg:"linear-gradient(135deg,#f59e0b,#d97706)",m:"#78350f"},{id:"lava",n:"حمم",c:100,bg:"linear-gradient(135deg,#ef4444,#7f1d1d)",m:"#450a0a"},{id:"ice",n:"جليد",c:100,bg:"linear-gradient(135deg,#67e8f9,#06b6d4)",m:"#164e63"},{id:"ghost",n:"شبح",c:120,bg:"#f1f5f9",m:"#94a3b8",bd:"#e2e8f0"},{id:"shadow",n:"ظلام",c:150,bg:"#0f172a",m:"#38bdf8",ec:"#38bdf8",pc:"#0f172a"},{id:"neon",n:"نيون",c:200,bg:"#000",m:"#39ff14",ec:"#39ff14",pc:"#000",gl:"0 0 12px rgba(57,255,20,.5)"},{id:"galaxy",n:"مجرة",c:250,bg:"linear-gradient(135deg,#4c1d95,#1e1b4b)",m:"#c4b5fd",ec:"#e0e7ff"},{id:"rainbow",n:"قوس قزح",c:300,bg:"linear-gradient(90deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#8b5cf6)",m:"#1e293b"}];
 var _BOTQ=[{q:"عاصمة فرنسا؟",o:["لندن","باريس","برلين","مدريد"],a:1},{q:"كواكب المجموعة الشمسية؟",o:["7","8","9","10"],a:1},{q:"أكبر قارة؟",o:["أفريقيا","آسيا","أوروبا","أمريكا"],a:1},{q:"عاصمة العراق؟",o:["البصرة","بغداد","أربيل","الموصل"],a:1},{q:"ألوان قوس القزح؟",o:["5","6","7","8"],a:2},{q:"15×3=?",o:["30","45","50","60"],a:1},{q:"أطول نهر؟",o:["دجلة","النيل","الأمازون","المسيسبي"],a:1},{q:"أصغر دولة؟",o:["موناكو","الفاتيكان","سان مارينو","مالطا"],a:1},{q:"كم عظمة بالجسم؟",o:["186","206","256","306"],a:1},{q:"أكبر محيط؟",o:["الأطلسي","الهادئ","الهندي","المتجمد"],a:1}];
-var _HMSG=["مرحباً! أنا دليلك ✨","سجل دخول بالاسم الثلاثي 📝","اختر المدرسة أو الإنجليزي 👆","جرب مختبر الكهرباء ⚡","العب تحديات واربح نقاط 🎮","اضغط عليّ للإخفاء 👋"];
 
 (function(){
-var _fh=document.createElement('div');
-_fh.className='fly-helper';
-_fh.innerHTML='<div class="fly-bubble">'+_HMSG[0]+'</div><div class="fly-creature"><div class="fly-body-main"><div class="fly-eye-w fly-eye-l"><div class="fly-pupil-w"></div></div><div class="fly-eye-w fly-eye-r"><div class="fly-pupil-w"></div></div><div class="fly-mouth"></div><div class="fly-wing-w fly-wing-l"></div><div class="fly-wing-w fly-wing-r"></div></div></div>';
-document.body.appendChild(_fh);
-var _hs=0;setInterval(function(){_hs=(_hs+1)%_HMSG.length;var b=_fh.querySelector('.fly-bubble');if(b)b.textContent=_HMSG[_hs]},4500);
-_fh.querySelector('.fly-creature').addEventListener('click',function(){_fh.classList.add('fly-hide');setTimeout(function(){_fh.style.display='none'},700)});
 
 function _applySkin(){var id=localStorage.getItem('char_skin')||'default';var m=document.querySelector('.char-main');var arms=document.querySelectorAll('.arm');if(!m)return;_SKINS.forEach(function(s){m.classList.remove('cskin-'+s.id);arms.forEach(function(a){a.classList.remove('cskin-'+s.id)})});if(id!=='default'){m.classList.add('cskin-'+id);arms.forEach(function(a){a.classList.add('cskin-'+id)})}}
 new MutationObserver(function(){if(document.querySelector('.char-main'))_applySkin()}).observe(document.body,{childList:true,subtree:true});
