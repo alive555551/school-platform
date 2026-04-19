@@ -72,14 +72,6 @@
 
         h1, h2, h3, h4 { font-family: 'Cairo', sans-serif; margin: 0; }
 
-        /* حقوق المطور */
-        .dev-copyright {
-            text-align: center; font-size: 0.9rem; color: var(--text-muted); 
-            padding: 15px; font-family: 'Cairo', sans-serif;
-            position: absolute; bottom: 5px; width: 100%; pointer-events: none; z-index: 100;
-        }
-        .dev-copyright span { color: var(--primary-gold); font-weight: bold; text-shadow: 0 0 10px var(--gold-glow); }
-
         #screen-intro { 
             position: fixed; inset: 0; z-index: 50; 
             background: #000000;
@@ -374,10 +366,17 @@
         .law-section h3 { color: #fff; font-size: 1.25rem; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; font-family: 'Cairo', sans-serif;}
         .law-section h3 i { color: var(--primary-gold); }
 
+        /* ستايل قائمة الحقوق */
+        .credit-list { list-style: none; padding: 0; margin-top: 20px; }
+        .credit-list li { margin-bottom: 15px; display: flex; align-items: flex-start; gap: 15px; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border-right: 3px solid var(--primary-gold); transition: 0.3s; }
+        .credit-list li:hover { background: rgba(226, 180, 154, 0.05); transform: translateX(-5px); }
+        .credit-list li i { color: var(--primary-gold); font-size: 1.2rem; margin-top: 3px; }
+        .credit-list li span { color: var(--text-main); font-size: 1.1rem; line-height: 1.6; }
+
         @media (min-width: 1024px) {
             .grid-layout { grid-template-columns: 320px 1fr 320px; }
             .examples-content-wrapper { grid-template-columns: 380px 1fr; }
-            #calc-workspace, #quiz-workspace, #notes-workspace { display: flex; justify-content: center; }
+            #calc-workspace, #quiz-workspace, #notes-workspace, #credits-workspace { display: flex; justify-content: center; }
             .panel { max-height: calc(100vh - 150px); }
         }
         @media (max-width: 1023px) {
@@ -405,7 +404,6 @@
 
             <button class="start-btn" onclick="startApp()">ابدأ الاستكشاف</button>
         </div>
-        <div class="dev-copyright">صناعة وتطوير واجهات برمجية وألوان <span>سيرفر علي احمد</span></div>
     </div>
 
     <div id="screen-login">
@@ -458,8 +456,6 @@
             <p class="toggle-auth" onclick="toggleAuth('login')">لديك حساب بالفعل؟ تسجيل الدخول</p>
             <button class="back-btn-glass" onclick="goBack()"><i class="fas fa-arrow-right"></i> العودة للرئيسية</button>
         </div>
-
-        <div class="dev-copyright">صناعة وتطوير واجهات برمجية وألوان <span>سيرفر علي احمد</span></div>
     </div>
 
     <div id="screen-dashboard">
@@ -487,6 +483,7 @@
                 <button class="nav-tab" onclick="switchTab('calc', this)"><i class="fas fa-calculator"></i> الحاسبة الهندسية</button>
                 <button class="nav-tab" onclick="switchTab('quiz', this)"><i class="fas fa-graduation-cap"></i> اختبر معلوماتك</button>
                 <button class="nav-tab" onclick="switchTab('notes', this)"><i class="fas fa-edit"></i> سجل الملاحظات</button>
+                <button class="nav-tab" onclick="switchTab('credits', this)"><i class="fas fa-copyright"></i> حقوق التطوير</button>
             </div>
         </aside>
 
@@ -606,7 +603,34 @@
             </div>
         </main>
         
-        <div class="dev-copyright" style="position: relative; margin-top: auto; padding: 20px 0;">صناعة وتطوير واجهات برمجية وألوان <span>سيرفر علي احمد</span></div>
+        <main class="workspace" id="credits-workspace">
+            <div style="max-width: 850px; width: 100%;">
+                <section class="panel">
+                    <div class="panel-header"><i class="fas fa-copyright"></i> <h2>حقوق التطوير والعمل</h2></div>
+                    <div class="panel-content">
+                        <div style="text-align: center; margin: 20px 0;">
+                            <h3 style="color: var(--primary-gold); font-size: 1.8rem; font-family: 'Playfair Display', 'Cairo', serif; text-shadow: 0 0 15px var(--gold-glow);">حقوق حسين محمد & حقوق علي احمد</h3>
+                        </div>
+                        
+                        <div class="law-section">
+                            <ul class="credit-list">
+                                <li><i class="fas fa-check-circle"></i> <span><b>1.</b> حسين صمم شكل واجهة ما بعد تسجيل الدخول.</span></li>
+                                <li><i class="fas fa-check-circle"></i> <span><b>2.</b> علي عدل ألوان الواجهة مع تشغيل الأزرار ودعمهم بالـ AI.</span></li>
+                                <li><i class="fas fa-check-circle"></i> <span><b>3.</b> حسين جاب ملف PDF لكتاب الرياضيات.</span></li>
+                                <li><i class="fas fa-check-circle"></i> <span><b>4.</b> علي ضاف الملف للـ AI وضاف أسماء الأقسام حسب الفصول.</span></li>
+                                <li><i class="fas fa-check-circle"></i> <span><b>5.</b> حسين سوه فكرة تسجيل الدخول.</span></li>
+                                <li><i class="fas fa-check-circle"></i> <span><b>6.</b> علي طبقها برمجياً.</span></li>
+                                <li><i class="fas fa-check-circle"></i> <span><b>7.</b> علي جاب فكرة الثيمات المتعددة.</span></li>
+                                <li><i class="fas fa-check-circle"></i> <span><b>8.</b> وعلي طبقها برمجياً.</span></li>
+                                <li><i class="fas fa-check-circle"></i> <span><b>9.</b> حسين سوه شكل القائمة ما بعد تسجيل الدخول.</span></li>
+                                <li><i class="fas fa-server"></i> <span><b>10.</b> ((السيرفر)) علي سواه بالكامل بنسبة 100%.</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+        
     </div>
 
     <div class="ai-response-modal" id="aiModal">
